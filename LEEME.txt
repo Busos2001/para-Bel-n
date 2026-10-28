@@ -1,0 +1,18 @@
+PROYECTO PARA BELÉN ❤️
+
+Archivos:
+- index.html
+- foto1.jpg ... foto5.jpg
+
+IMPORTANTE SOBRE EL CONTADOR:
+Esta versión visual de inicio usa localStorage, por lo que la fecha queda guardada solo en el navegador/dispositivo donde se pulsa "Sí, quiero".
+Todavía NO está configurada para compartir la fecha entre celulares. Antes de publicar la versión definitiva, debemos configurar una base de datos gratuita (por ejemplo Supabase) y proteger la operación para que la fecha se establezca una sola vez.
+
+PUBLICACIÓN GRATIS:
+1. Entra a https://github.com/ y abre tu repositorio para-belen.
+2. Sube index.html y las cinco fotos JPG a la raíz del repositorio.
+3. En Settings > Pages, selecciona Deploy from a branch, branch main y folder /(root), y guarda.
+4. GitHub Pages mostrará la URL pública de tu página.
+
+Privacidad:
+GitHub Pages en repositorios públicos permite que otras personas vean el código y las fotos. Publica únicamente imágenes que ambos estén cómodos compartiendo.
