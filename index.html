@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+
 <style>
 :root{--pink:#c94f79;--deep:#963b5e;--ink:#513d46;--paper:rgba(255,255,255,.88)}
 *{box-sizing:border-box}
@@ -29,6 +31,7 @@ h1{font-size:clamp(2rem,7vw,3.25rem);line-height:1.15;color:var(--deep);margin:1
 .buttons{display:grid;gap:12px;margin:24px 0 8px}
 button{border:0;border-radius:999px;padding:16px 20px;font:700 1rem "DM Sans",sans-serif;cursor:pointer;transition:transform .2s,box-shadow .2s}
 button:active{transform:scale(.98)}
+button:disabled{opacity:.65;cursor:wait}
 .yes{background:linear-gradient(135deg,#d95f89,#b83d6c);color:white;box-shadow:0 8px 20px #c94f7938}
 .think{background:#fff;color:#896b78;border:1px solid #f1d4df}
 .small-note{font-size:.9rem;line-height:1.65;color:#927985;text-align:center}
@@ -47,6 +50,7 @@ footer{text-align:center;color:#b18496;font-size:.8rem;padding:24px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
 </head>
+
 <body>
 <main>
   <section class="card intro">
@@ -71,71 +75,186 @@ footer{text-align:center;color:#b18496;font-size:.8rem;padding:24px}
     <img class="photo short" src="foto1.jpg" alt="Nuestro recuerdo en una videollamada">
     <div class="kicker">Tengo una pregunta para ti</div>
     <h2 class="question">¿Quieres ser mi polola? ❤️</h2>
+
     <div class="buttons" id="buttons">
       <button class="yes" id="btnYes">Sí, quiero ❤️</button>
       <button class="think" id="btnThink">Déjame pensarlo 🙈</button>
     </div>
+
     <p class="small-note" id="thinkMessage" aria-live="polite"></p>
+
     <div id="success" class="success hidden" aria-live="polite">
       <h2>Entonces oficialmente comienza nuestra historia. 🥹❤️</h2>
       <p class="small-note">Nuestro tiempo empieza a contar desde este momento.</p>
+
       <div class="counter">
         <div class="unit"><span class="num" id="days">0</span><span class="label">Días</span></div>
         <div class="unit"><span class="num" id="hours">00</span><span class="label">Horas</span></div>
         <div class="unit"><span class="num" id="minutes">00</span><span class="label">Minutos</span></div>
         <div class="unit"><span class="num" id="seconds">00</span><span class="label">Segundos</span></div>
       </div>
+
       <p class="forever">Y esto recién comienza... ❤️</p>
     </div>
   </section>
+
   <footer>Hecho con cariño, para Belén ❤️</footer>
 </main>
+
 <div id="hearts" aria-hidden="true"></div>
+
 <script>
 const $ = id => document.getElementById(id);
-const KEY = "fechaInicioPololeoBelen";
+
+const SUPABASE_URL = "https://gxeesttyijszbswkixtn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RbwBSZbbz3vG5IkSjKErfg_5RQ9-zrY";
+
 let timer = null;
-function updateCounter(start){
+let startTime = null;
+let busy = false;
+
+async function getSharedStart() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/contador_belen?select=inicio&id=eq.1`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("No se pudo consultar el contador.");
+  }
+
+  const rows = await response.json();
+  return rows.length && rows[0].inicio ? rows[0].inicio : null;
+}
+
+function updateCounter(start) {
   const elapsed = Math.max(0, Date.now() - start);
   $("days").textContent = Math.floor(elapsed / 86400000);
-  $("hours").textContent = String(Math.floor(elapsed / 3600000) % 24).padStart(2,"0");
-  $("minutes").textContent = String(Math.floor(elapsed / 60000) % 60).padStart(2,"0");
-  $("seconds").textContent = String(Math.floor(elapsed / 1000) % 60).padStart(2,"0");
+  $("hours").textContent = String(Math.floor(elapsed / 3600000) % 24).padStart(2, "0");
+  $("minutes").textContent = String(Math.floor(elapsed / 60000) % 60).padStart(2, "0");
+  $("seconds").textContent = String(Math.floor(elapsed / 1000) % 60).padStart(2, "0");
 }
-function showYes(start){
+
+function showYes(start) {
+  const timestamp = new Date(start).getTime();
+
+  if (!Number.isFinite(timestamp)) {
+    throw new Error("La fecha recibida no es válida.");
+  }
+
+  startTime = timestamp;
   $("buttons").classList.add("hidden");
   $("thinkMessage").classList.add("hidden");
   $("success").classList.remove("hidden");
-  updateCounter(start);
-  if(timer) clearInterval(timer);
-  timer = setInterval(() => updateCounter(start),1000);
-}
-function burst(){
-  for(let i=0;i<22;i++) setTimeout(makeHeart, i*70);
-}
-function makeHeart(){
-  const h=document.createElement("span");
-  h.className="heart"; h.textContent=["❤️","💕","♡","💗"][Math.floor(Math.random()*4)];
-  h.style.left=Math.random()*100+"vw";
-  h.style.fontSize=(12+Math.random()*20)+"px";
-  h.style.animationDuration=(6+Math.random()*5)+"s";
-  $("hearts").appendChild(h);
-  setTimeout(()=>h.remove(),12000);
-}
-setInterval(()=>{if(Math.random()>.3)makeHeart()},1200);
 
-// Esta versión de muestra guarda la fecha solo en este navegador.
-// Para que sea compartida entre celulares, configura una base de datos antes de publicar.
-const saved = localStorage.getItem(KEY);
-if(saved && Number.isFinite(Number(saved))) showYes(Number(saved));
-$("btnYes").addEventListener("click",()=>{
-  let start = localStorage.getItem(KEY);
-  if(!start){ start=String(Date.now()); localStorage.setItem(KEY,start); }
-  showYes(Number(start)); burst();
+  updateCounter(startTime);
+
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => updateCounter(startTime), 1000);
+}
+
+function burst() {
+  for (let i = 0; i < 22; i++) setTimeout(makeHeart, i * 70);
+}
+
+function makeHeart() {
+  const h = document.createElement("span");
+  h.className = "heart";
+  h.textContent = ["❤️", "💕", "♡", "💗"][Math.floor(Math.random() * 4)];
+  h.style.left = Math.random() * 100 + "vw";
+  h.style.fontSize = (12 + Math.random() * 20) + "px";
+  h.style.animationDuration = (6 + Math.random() * 5) + "s";
+  $("hearts").appendChild(h);
+  setTimeout(() => h.remove(), 12000);
+}
+
+setInterval(() => {
+  if (Math.random() > 0.3) makeHeart();
+}, 1200);
+
+async function startSharedCounter() {
+  if (busy) return;
+
+  busy = true;
+  $("btnYes").disabled = true;
+  $("btnYes").textContent = "Un momento... ❤️";
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/iniciar_contador_belen`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("No se pudo iniciar el contador compartido.");
+    }
+
+    // Consultamos la fecha guardada para asegurarnos de usar
+    // la misma fecha en todos los dispositivos.
+    const start = await getSharedStart();
+
+    if (!start) {
+      throw new Error("No se encontró la fecha del contador.");
+    }
+
+    showYes(start);
+    burst();
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo conectar con el contador. Comprueba la conexión y que hayas ejecutado el SQL de Supabase.");
+  } finally {
+    busy = false;
+    $("btnYes").disabled = false;
+    $("btnYes").textContent = "Sí, quiero ❤️";
+  }
+}
+
+$("btnYes").addEventListener("click", startSharedCounter);
+
+$("btnThink").addEventListener("click", () => {
+  $("thinkMessage").textContent =
+    "No importa cuánto tardes, solo quería que supieras lo importante que eres para mí. ❤️";
 });
-$("btnThink").addEventListener("click",()=>{
-  $("thinkMessage").textContent="No importa cuánto tardes, solo quería que supieras lo importante que eres para mí. ❤️";
-});
+
+async function initializePage() {
+  try {
+    const start = await getSharedStart();
+
+    if (start) {
+      showYes(start);
+    }
+  } catch (error) {
+    console.error("No se pudo comprobar el contador compartido:", error);
+  }
+}
+
+// Si el contador se inicia en otro celular mientras esta página
+// sigue abierta, esta página también lo detectará.
+initializePage();
+
+setInterval(async () => {
+  if (startTime !== null) return;
+
+  try {
+    const start = await getSharedStart();
+    if (start) showYes(start);
+  } catch (error) {
+    console.error("No se pudo sincronizar el contador:", error);
+  }
+}, 5000);
 </script>
 </body>
 </html>
